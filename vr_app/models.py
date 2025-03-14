@@ -57,8 +57,8 @@ class Sentence(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # 사용자와 연결
     content = models.TextField()  # 문장 내용
     is_ai_generated = models.BooleanField(default=False)  # AI 추천 여부
-    created_at = models.DateTimeField(auto_now_add=True)  # 생성 시간
-
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)  # 생성 시간 
+    # 시간순 정렬: 최신 문장 먼저 보여주기 /통계 분석: 사용자의 문장 작성 패턴 파악/ 기간별 필터링: "이번 달에 작성한 문장만 보기" 등
     def __str__(self):
         return f"{self.user.username}: {self.content[:20]}"
 
@@ -66,7 +66,7 @@ class Sentence(models.Model):
 # NotificationSettings 모델
 class NotificationSettings(models.Model):
     """알림 설정"""
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)  # 사용자와 연결
+    user = models.OneToOneField(Sentence, on_delete=models.CASCADE)  # 사용자와 연결
     repeat_mode = models.CharField(
         max_length=10,
         choices=[('once', '한번'), ('daily', '매일'), ('random', '랜덤')],

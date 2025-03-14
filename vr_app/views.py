@@ -11,11 +11,12 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 #from django.http import HttpResponse
+from rest_framework_simplejwt.exceptions import TokenError
 
 class RegisterView(APIView):
     """회원가입"""
     def post(self, request):
-        serializer = CustomUserSerializer(data=request.data)
+        serializer = CustomUserSerializer(data=request.data)#여기서 시리얼라이즈를 사용 회원가입 창에서 보낸 입력값을 시리얼라이즈로
         if serializer.is_valid():
             user = CustomUser.objects.create_user(
                 username=serializer.validated_data['username'],
@@ -73,6 +74,28 @@ class LogoutView(APIView):
             print("logout fail",str(e))
             return Response({"error": "로그아웃 실패"}, status=status.HTTP_400_BAD_REQUEST)
 
+class RefreshTokenView(APIView):#로그인시 리프레쉬 토큰과 액세스 토큰이 만료되었을시 해결을 해주는 클래스
+    def post(self, request):
+        print("checking refresh token")
+        refresh_token = request.data.get('refresh')
+        if not refresh_token:
+            return Response({"error": "Refresh token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            
+            token = RefreshToken(refresh_token) #리프레쉬 토큰의 유효성검사 좋게 실행된다면 액세스토큰 생성
+            access_token = str(token.access_token)
+            print("you have refresh token")
+            return Response({
+                "access": access_token
+            }, status=status.HTTP_200_OK)
+
+        except TokenError as e: #리프레쉬 토큰도 없을경우 오류를 돌려줘서 로그인화면으로 돌아가게 시킴
+            return Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class DeleteAccountView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -81,3 +104,9 @@ class DeleteAccountView(APIView):
         print("delete",user)
         user.delete()
         return Response({"message": "계정이 성공적으로 삭제되었습니다."}, status=status.HTTP_200_OK)
+    
+   
+    
+    
+    
+    
