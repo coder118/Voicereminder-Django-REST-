@@ -18,17 +18,17 @@ class TTSVoiceSerializer(serializers.ModelSerializer):
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['username', 'tts_voice', 'vibration_enabled']
+        fields = ['username', 'vibration_enabled']
 
 class SentenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sentence
-        fields = ['user', 'content', 'is_ai_generated', 'created_at']
+        fields = ['user', 'content', 'tts_voice', 'is_ai_generated', 'created_at']
 
 class NotificationSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationSettings
-        fields = ['user', 'repeat_mode', 'notification_count','notification_time','notification_date']
+        fields = ['sentence', 'repeat_mode', 'notification_count','notification_time','notification_date']
 
 class AIRecommendedSentenceSerializer(serializers.ModelSerializer):
     class Meta:

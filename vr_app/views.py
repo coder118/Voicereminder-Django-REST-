@@ -12,6 +12,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 #from django.http import HttpResponse
 from rest_framework_simplejwt.exceptions import TokenError
+import logging
+
+# logger = logging.getLogger('django')
 
 class RegisterView(APIView):
     """회원가입"""
@@ -21,15 +24,17 @@ class RegisterView(APIView):
             user = CustomUser.objects.create_user(
                 username=serializer.validated_data['username'],
                 password=request.data.get('password'),  # 비밀번호는 별도로 처리
-                tts_voice=serializer.validated_data.get('tts_voice'),
+                #tts_voice=serializer.validated_data.get('tts_voice'), 회원가입창에 tts 부분을 제거해줘야 함!!!!
                 vibration_enabled=serializer.validated_data.get('vibration_enabled', True)
             )
             return Response({"message": "회원가입 성공"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+#https://stackoverflow.com/questions/59856341/okhttp-http-failed-java-net-unknownserviceexception-cleartext-communicati
+#https://ethank.tistory.com/entry/django-%EC%84%9C%EB%B2%84-%ED%8F%AC%ED%8A%B8%EB%B2%88%ED%98%B8-%EB%B0%94%EA%BE%B8%EA%B8%B0-%EB%B0%8F-%EC%99%B8%EB%B6%80-%EC%A0%91%EC%86%8D-%ED%97%88%EC%9A%A9
 class LoginView(APIView):
     """로그인"""
+    # logger.debug(f"🚀 로그인 요청: {method} FROM {request.META.get('REMOTE_ADDR')}")
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
@@ -43,7 +48,7 @@ class LoginView(APIView):
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
                 "username": user.username,
-                "tts_voice": user.tts_voice.name if user.tts_voice else 0,
+                #"tts_voice": user.tts_voice.name if user.tts_voice else 0,
                 "vibration_enabled": user.vibration_enabled,
             }, status=status.HTTP_200_OK)
         return Response({"error": "로그인 실패. 아이디 또는 비밀번호를 확인하세요."}, status=status.HTTP_401_UNAUTHORIZED)

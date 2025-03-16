@@ -14,9 +14,8 @@ class Test(models.Model):
 class TTSVoice(models.Model):
     """TTS 음성 옵션"""
     name = models.CharField(max_length=50, unique=True)  # 음성 이름
-    language = models.CharField(max_length=20)  # 언어 (예: ko-KR, en-US)
-    style = models.CharField(max_length=20, blank=True)  # 음성 스타일 (선택 사항)
-
+    description = models.TextField(blank=True)  # 음성 스타일 (선택 사항)
+    
     def __str__(self):
         return f"{self.name} ({self.language})"
 
@@ -24,9 +23,7 @@ class TTSVoice(models.Model):
 # CustomUser 모델
 class CustomUser(AbstractUser):
     """사용자 정보 확장"""
-    tts_voice = models.ForeignKey(
-        TTSVoice, on_delete=models.SET_NULL, null=True, blank=True
-    )  # 외래키로 TTSVoice 참조
+    
     vibration_enabled = models.BooleanField(default=True)  # 진동 알림 설정
 
     # groups와 user_permissions 필드에 related_name 추가
@@ -56,6 +53,11 @@ class Sentence(models.Model):
     """사용자가 작성한 문장 및 알림 데이터"""
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # 사용자와 연결
     content = models.TextField()  # 문장 내용
+    
+    tts_voice = models.ForeignKey(
+        TTSVoice, on_delete=models.SET_NULL, null=True, blank=True
+    )  # 외래키로 TTSVoice 참조
+    
     is_ai_generated = models.BooleanField(default=False)  # AI 추천 여부
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)  # 생성 시간 
     # 시간순 정렬: 최신 문장 먼저 보여주기 /통계 분석: 사용자의 문장 작성 패턴 파악/ 기간별 필터링: "이번 달에 작성한 문장만 보기" 등
@@ -66,7 +68,7 @@ class Sentence(models.Model):
 # NotificationSettings 모델
 class NotificationSettings(models.Model):
     """알림 설정"""
-    user = models.OneToOneField(Sentence, on_delete=models.CASCADE)  # 사용자와 연결
+    sentence = models.ForeignKey(Sentence, on_delete=models.CASCADE)  # 문장과 연결을 해서 1:n의 관계를 만듬 문장 하나에 여러개의 알림이 가능
     repeat_mode = models.CharField(
         max_length=10,
         choices=[('once', '한번'), ('daily', '매일'), ('random', '랜덤')],
@@ -79,7 +81,7 @@ class NotificationSettings(models.Model):
     def __str__(self):
         date_str = self.notification_date.strftime("%Y-%m-%d") if self.notification_date else "No date set" #날짜 값이 비어있을때 no date 반환
         time_str = self.notification_time.strftime("%H:%M") if self.notification_time else "No time set" #알람 시간이 안 정해져 있을 경우 
-        return f"{self.user.username}: {self.repeat_mode} on {date_str} at {time_str}"
+        return f"{self.sentence.user.username}: {self.repeat_mode} on {date_str} at {time_str}"
 
 
 # PasswordChangeLog 모델

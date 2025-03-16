@@ -21,7 +21,6 @@ class CreatePostView(APIView):
             user, created = CustomUser.objects.get_or_create(
                 username=request.user.username,  # 인증된 사용자 이름 사용
                 defaults={
-                    'tts_voice': user_settings_data['tts_voice'],
                     'vibration_enabled': user_settings_data['vibration_enabled']
                 }
             )
@@ -33,6 +32,7 @@ class CreatePostView(APIView):
             sentence_serializer = SentenceSerializer(data={
                 'user': user.id,
                 'content': sentence_data['content'],
+                'tts_voice': sentence_data.get('tts_voice'),
                 'is_ai_generated': False  # 기본값 설정
             })
             sentence_serializer.is_valid(raise_exception=True)
@@ -45,7 +45,7 @@ class CreatePostView(APIView):
         # 알림 설정 저장
         try:
             notification_serializer = NotificationSettingsSerializer(data={
-                'user': user.id,
+                'sentence': sentence.id,
                 'repeat_mode': notification_settings_data['repeat_mode'],
                 'notification_time': notification_settings_data['notification_time'],
                 'notification_date': notification_settings_data['notification_date'],

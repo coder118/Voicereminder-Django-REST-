@@ -25,5 +25,5 @@ urlpatterns = [
     path('token/refresh/', RefreshTokenView.as_view(), name='token_refresh'),
     path('delete-account/', DeleteAccountView.as_view(), name='delete_account'),
     
-    path('sentences/create/',CreatePostView.as_view(),name = 'sentences/create/')# 문장을 db에저장하는 경로 
+    path('sentences_create/',CreatePostView.as_view(),name = 'create_sentence')# 문장을 db에저장하는 경로 
 ]

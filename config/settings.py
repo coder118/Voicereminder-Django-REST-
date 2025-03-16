@@ -40,8 +40,8 @@ def get_secret(setting):
 SECRET_KEY = get_secret("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.0.2.2']
+#'127.0.0.1', 'localhost', '10.0.2.2',
+ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'vr_app.CustomUser'
 
@@ -113,10 +113,41 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'file': {  # 파일에 로그 저장
+#             'level': 'DEBUG',
+#             'class': 'logging.FileHandler',
+#             'filename': os.path.join(BASE_DIR, 'django_requests.log'),
+#         },
+#         'console': {  # 콘솔(터미널)에 로그 출력
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['file', 'console'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#         'django.request': {  # HTTP 요청 관련 로그
+#             'handlers': ['file', 'console'],
+#             'level': 'DEBUG',
+#             'propagate': False,
+#         },
+#     },
+# }
+
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    #'django.middlewares.RequestLoggingMiddleware', #로그 기능 추가
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
