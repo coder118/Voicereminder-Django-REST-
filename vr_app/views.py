@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import CustomUser
-from .serializers import CustomUserSerializer
+from .models import CustomUser,FCMToken
+from .serializers import CustomUserSerializer,FcmTokenSerializer
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -38,21 +38,31 @@ class LoginView(APIView):
     def post(self, request):
         username = request.data.get('username')
         password = request.data.get('password')
-        print(f"Username: {username}, Password: {password}")
+        fcm_token = request.data.get('fcm_token')
+        print(f"Username: {username}, Password: {password},fcmtoken{fcm_token}")
        
         user = authenticate(username=username, password=password)
         print(user)
         if user:
+            # FCM 토큰 업데이트
+            # if fcm_token:
+            #     user.fcm_token = fcm_token
+            #     user.save()
+            # FCM 토큰 저장 또는 업데이트
+            if fcm_token:
+                FCMToken.objects.get_or_create(user=user, token=fcm_token)
             refresh = RefreshToken.for_user(user)
             return Response({
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
                 "username": user.username,
                 #"tts_voice": user.tts_voice.name if user.tts_voice else 0,
+                #"fcm_token": user.fcm_token, 
                 "vibration_enabled": user.vibration_enabled,
             }, status=status.HTTP_200_OK)
         return Response({"error": "로그인 실패. 아이디 또는 비밀번호를 확인하세요."}, status=status.HTTP_401_UNAUTHORIZED)
-
+    
+   
 #@method_decorator(csrf_exempt, name='dispatch')
 #@csrf_exempt
 class LogoutView(APIView):
@@ -65,6 +75,9 @@ class LogoutView(APIView):
         print("Headers:", request.headers)
         print("Body:", request.data)
         try:
+            
+            FCMToken.objects.filter(user=request.user).delete()#로그아웃시 로그인시 만들었던 fmctoken삭제 
+            
             print("logout?")
             refresh_token = request.data.get("refresh")
             print("Refresh token:", refresh_token)
@@ -73,6 +86,12 @@ class LogoutView(APIView):
             token = RefreshToken(refresh_token) 
             token.blacklist()  # 토큰을 블랙리스트에 추가하여 무효화
             #RefreshToken(refresh_token).delete()
+            
+            # FCM 토큰 연결 끊기 (비활성화 처리)
+            # user = request.user
+            # user.fcm_token = None  # FCM 토큰을 제거하지 않고 연결만 끊음
+            # user.save()
+            
             return Response(status=status.HTTP_204_NO_CONTENT)
         #HttpResponse(status=status.HTTP_205_RESET_CONTENT, content_type=None)  Response({"message": "로그아웃 성공"}, status=status.HTTP_205_RESET_CONTENT)
         except Exception as e: 
@@ -107,11 +126,28 @@ class DeleteAccountView(APIView):
     def post(self, request):
         user = request.user
         print("delete",user)
+        
+        # FCM 토큰 제거
+        # user.fcm_token = None
+        # user.save()
+        
         user.delete()
         return Response({"message": "계정이 성공적으로 삭제되었습니다."}, status=status.HTTP_200_OK)
     
    
     
-    
-    
+class UpdateFcmTokenView(APIView): # fcm 토큰을 유저에 fcm_token 필드에 저장
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            user_profile = CustomUser.objects.get(user=request.user)
+            serializer = FcmTokenSerializer(user_profile, data=request.data, partial=True)
+        
+            if serializer.is_valid():
+                serializer.save()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)    
     

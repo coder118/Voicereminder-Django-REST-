@@ -3,17 +3,22 @@ from django.contrib import admin
 from . import ViewSets
 
 from rest_framework import routers
-from .ViewSets import  TTSVoiceViewSet, SentenceViewSet, NotificationSettingsViewSet, AIRecommendedSentenceViewSet
-from .views import RegisterView, LoginView, LogoutView,DeleteAccountView,RefreshTokenView
+from .ViewSets import  TTSVoiceViewSet, SentenceViewSet, NotificationSettingsViewSet, AIRecommendedSentenceViewSet,SentenceNotificationViewSet
+from .views import RegisterView, LoginView, LogoutView,DeleteAccountView,RefreshTokenView,UpdateFcmTokenView
 from .post_views import CreatePostView
+from .getSentence_views import GetSentenceView
+from .update_views import UpdateSentenceView
 
 router=routers.DefaultRouter()
 router.register(r'tests',ViewSets.TestViewSet)
-router.register(r'tts-voices', TTSVoiceViewSet)
-router.register(r'sentences', SentenceViewSet)
-router.register(r'notifications', NotificationSettingsViewSet)
+
+# router.register(r'sentences', SentenceViewSet)
+# router.register(r'notifications', NotificationSettingsViewSet)
 router.register(r'ai-recommended-sentences', AIRecommendedSentenceViewSet)
 
+router.register(r'tts-voices', TTSVoiceViewSet,basename='ttsvoice')
+router.register(r'notifications', SentenceNotificationViewSet, basename='notification') # get
+router.register(r'sentences', SentenceNotificationViewSet, basename='sentence') #patch 
 
 
 urlpatterns = [
@@ -25,5 +30,8 @@ urlpatterns = [
     path('token/refresh/', RefreshTokenView.as_view(), name='token_refresh'),
     path('delete-account/', DeleteAccountView.as_view(), name='delete_account'),
     
-    path('sentences_create/',CreatePostView.as_view(),name = 'create_sentence')# 문장을 db에저장하는 경로 
+    path('update_fcm_token/', UpdateFcmTokenView.as_view(), name='update_fcm_token'), # 토큰 업데이트 
+    path('sentences_create/',CreatePostView.as_view(),name = 'create_sentence'),# 문장을 db에저장하는 경로 
+    # path('notifications_check/', GetSentenceView.as_view(), name='notifications_check'), 문장 get
+    # path('sentence/<int:id>/', UpdateSentenceView.as_view(), name='update_sentence'), 문장 update
 ]
