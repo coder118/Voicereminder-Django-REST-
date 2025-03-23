@@ -31,7 +31,7 @@ class CustomUser(AbstractUser):
     """사용자 정보 확장"""
     
     vibration_enabled = models.BooleanField(default=True)  # 진동 알림 설정
-    fcm_token = models.CharField(max_length=255, blank=True, null=True)
+    #fcm_token = models.CharField(max_length=255, blank=True, null=True)
     
     # groups와 user_permissions 필드에 related_name 추가
     groups = models.ManyToManyField(

@@ -6,40 +6,49 @@ from firebase_admin import messaging
 from .models import NotificationSettings, FCMToken, Sentence
 import random
 
+from typing import List
+
+from celery import shared_task
+
 @shared_task
-def process_notifications():
-    now = timezone.now()
-    notifications = NotificationSettings.objects.filter(
-        is_triggered=False,
-        notification_date__lte=now.date(),
-        notification_time__lte=now.time()
-    ).select_related('sentence__user')
+def test_task(a: int, b: int):
+    print("test Celery task : ", a + b)
+    return a + b
 
-    for notification in notifications:
-        send_fcm_notification.delay(notification.id)
-        update_notification_status(notification)
+# @shared_task
+# def process_notifications():
+#     now = timezone.now() #현재 시각 입력
+#     notifications = NotificationSettings.objects.filter(# 알람시간의 값을 filter로 구분을 해서 가지고 오는데 related되어있는게 단순히 user를 가져오는게 아니라 로그인되어있는 user를 가지고 와야함.
+#         is_triggered=False,
+#         notification_date__lte=now.date(),
+#         notification_time__lte=now.time()
+#     ).select_related('sentence__user')
+
+#     for notification in notifications:
+#         send_fcm_notification.delay(notification.id)
+#         update_notification_status(notification)
 
 
-def update_notification_status(notification):
-    now = timezone.now()
-    if notification.repeat_mode == 'once':
-        notification.is_triggered = True
-    elif notification.repeat_mode == 'daily':
-        # 다음 날로 날짜 업데이트
-        notification.notification_date = now.date() + timezone.timedelta(days=1)
-    elif notification.repeat_mode == 'random':
-        # 랜덤한 시간으로 업데이트 (1시간에서 24시간 사이)
-        random_hours = random.randint(1, 24)
-        new_time = (now + timezone.timedelta(hours=random_hours)).time()
-        notification.notification_time = new_time
-        if now.time() > new_time:
-            # 다음 날로 설정
-            notification.notification_date = now.date() + timezone.timedelta(days=1)
-        else:
-            notification.notification_date = now.date()
-    notification.is_triggered = False
-    notification.save()
-
+# def update_notification_status(notification):
+#     now = timezone.now()
+#     if notification.repeat_mode == 'once':
+#         notification.is_triggered = True
+#     elif notification.repeat_mode == 'daily':
+#         # 다음 날로 날짜 업데이트
+#         notification.notification_date = now.date() + timezone.timedelta(days=1)
+#     elif notification.repeat_mode == 'random':
+#         # 랜덤한 시간으로 업데이트 (1시간에서 24시간 사이)
+#         random_hours = random.randint(1, 24)
+#         new_time = (now + timezone.timedelta(hours=random_hours)).time()
+#         notification.notification_time = new_time
+#         if now.time() > new_time:
+#             # 다음 날로 설정
+#             notification.notification_date = now.date() + timezone.timedelta(days=1)
+#         else:
+#             notification.notification_date = now.date()
+#     notification.is_triggered = False
+#     notification.save()
+######################### 위에거 사용 
 # @shared_task
 # def check_alarms():
 #     current_time = timezone.now()

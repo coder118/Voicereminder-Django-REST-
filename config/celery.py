@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 import os
 from celery import Celery
+from celery.schedules import crontab
 
 # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vr_app.settings')
 
@@ -11,7 +12,7 @@ from celery import Celery
 # Django 설정을 로드합니다.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
-app = Celery('vr_app')
+app = Celery('config')
 
 # Celery 구성 설정을 Django 설정에서 가져옵니다.
 app.config_from_object('django.conf:settings', namespace='CELERY')

@@ -8,6 +8,7 @@ from .views import RegisterView, LoginView, LogoutView,DeleteAccountView,Refresh
 from .post_views import CreatePostView
 from .getSentence_views import GetSentenceView
 from .update_views import UpdateSentenceView
+from .views import Test
 
 router=routers.DefaultRouter()
 router.register(r'tests',ViewSets.TestViewSet)
@@ -34,4 +35,7 @@ urlpatterns = [
     path('sentences_create/',CreatePostView.as_view(),name = 'create_sentence'),# 문장을 db에저장하는 경로 
     # path('notifications_check/', GetSentenceView.as_view(), name='notifications_check'), 문장 get
     # path('sentence/<int:id>/', UpdateSentenceView.as_view(), name='update_sentence'), 문장 update
+    
+    
+    path('test', Test.as_view()),
 ]

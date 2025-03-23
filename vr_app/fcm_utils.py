@@ -17,11 +17,11 @@ from .models import NotificationSettings ,FCMToken, Sentence
 #         print(f"FCM 전송 실패: {e}")
 #         return None
     
-@shared_task
+#@shared_task
 def send_fcm_notification(notification_id):
     notification = NotificationSettings.objects.get(id=notification_id)
     user = notification.sentence.user
-    fcm_token = user.fcm_token
+    fcm_token = user.fcm_token #유저에서 fcm토큰이라는 필드는 없어져서 user를 통해서fcm db로 접근해야 함
 
     if not fcm_token:
         return

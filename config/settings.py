@@ -129,15 +129,15 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# from celery.schedules import crontab
 
-from celery.schedules import crontab
-
-CELERY_BEAT_SCHEDULE = {
-    'process-notifications-every-minute': {
-        'task': 'vr_app.tasks.process_notifications',
-        'schedule': crontab(minute='*/1'),
-    },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     'process-notifications-every-minute': {
+#         'task': 'vr_app.tasks.process_notifications',
+#         'schedule': crontab(minute='*/1'),
+#     },
+# }
 
 # LOGGING = {
 #     'version': 1,

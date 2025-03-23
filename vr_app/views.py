@@ -13,9 +13,21 @@ from django.utils.decorators import method_decorator
 #from django.http import HttpResponse
 from rest_framework_simplejwt.exceptions import TokenError
 import logging
-
+from django.http import HttpRequest
 # logger = logging.getLogger('django')
 
+
+from vr_app.tasks import test_task
+from celery.result import AsyncResult
+
+class Test(APIView): #celery 테스트 
+    def get(self, request: HttpRequest):
+        results = []
+        for i in range(10):  # 여러 태스크 호출
+            result = test_task.delay(i, i + 1)
+            results.append(result.id)
+        return Response({"message": "Celery Tasks Running", "task_ids": results}, status=202)
+    
 class RegisterView(APIView):
     """회원가입"""
     def post(self, request):
@@ -49,8 +61,7 @@ class LoginView(APIView):
             #     user.fcm_token = fcm_token
             #     user.save()
             # FCM 토큰 저장 또는 업데이트
-            if fcm_token:
-                FCMToken.objects.get_or_create(user=user, token=fcm_token)
+            
             refresh = RefreshToken.for_user(user)
             return Response({
                 "refresh": str(refresh),
@@ -130,7 +141,7 @@ class DeleteAccountView(APIView):
         # FCM 토큰 제거
         # user.fcm_token = None
         # user.save()
-        
+        FCMToken.objects.filter(user=request.user).delete()
         user.delete()
         return Response({"message": "계정이 성공적으로 삭제되었습니다."}, status=status.HTTP_200_OK)
     
@@ -140,14 +151,14 @@ class UpdateFcmTokenView(APIView): # fcm 토큰을 유저에 fcm_token 필드에
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        fcm_token = request.data.get('fcm_token')
+        print("login success !!!!!!fcm_token",fcm_token)
         try:
-            user_profile = CustomUser.objects.get(user=request.user)
-            serializer = FcmTokenSerializer(user_profile, data=request.data, partial=True)
-        
-            if serializer.is_valid():
-                serializer.save()
+            if fcm_token:
+                FCMToken.objects.create( user=request.user,token=fcm_token)
+                print("good save in fcm DB")
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)    
     
