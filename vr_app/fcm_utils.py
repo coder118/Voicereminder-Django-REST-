@@ -21,7 +21,7 @@ from .models import NotificationSettings ,FCMToken, Sentence
 def send_fcm_notification(notification_id):
     notification = NotificationSettings.objects.get(id=notification_id)
     user = notification.sentence.user
-    fcm_token = user.fcm_token #유저에서 fcm토큰이라는 필드는 없어져서 user를 통해서fcm db로 접근해야 함
+    fcm_token = user.fcm_token #유저에서 fcm토큰이라는 필드는 없어져서 user를 통해서fcm db로 접근해야 함/user가 있지만 로그인한 상태가 아닌 경우에는 실행이 될 수 없다. 
 
     if not fcm_token:
         return

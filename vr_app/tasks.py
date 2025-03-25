@@ -8,16 +8,67 @@ import random
 
 from typing import List
 
-from celery import shared_task
+from django.utils import timezone
+from .utils import schedule_notification
 
 @shared_task
 def test_task(a: int, b: int):
     print("test Celery task : ", a + b)
     return a + b
 
+@shared_task
+def test_periodic_task():
+    print("test Periodic task")
+    return "Complete"
+
+
+#false이고 notification에 저장된 유저의 date와 time값을 가져오고 그때만 celery가 실행이 된다? 예약을 해두는 느낌이면 가능하지 않을까? celery beat는 원하는 시간을 설정을 해둘 수 있으니까
+#user가 notification에 값을 저장할때 바로 그 시간을 celery beat로 예약을 해두는 느낌으로 저장을 하면 그 시간에 celery동작. false값은 true로 바꿔준다. 
+#근데 그럼 모든 알람이 저장이 되어야 하면 celery beat자체에 부담이 되는건 아닌지? 애초에 여러개의 알림을 동시에 저장을 할 수 있을까? 최대 몇개?
+#취소하거나 수정할때의 값도 추가를 해줘야 한다. 
+@shared_task
+def send_notification(notification_id):
+    print("what the celery working?")
+    try:
+        print("check celery task")
+        notification = NotificationSettings.objects.get(id=notification_id)
+        user = notification.sentence.user
+        
+        
+        # 실제 알림 전송 로직
+        print(f"Sending notification to {user.username}: {notification.sentence.content}")
+        
+        # 여기에 실제 알림 전송 코드 추가 (예: FCM)
+        
+        # 반복 모드 처리
+        if notification.repeat_mode == 'once':
+            notification.is_triggered = True
+            notification.save()
+            if notification.periodic_task:
+                notification.periodic_task.delete()
+        elif notification.repeat_mode == 'daily':
+            next_run = timezone.localtime(timezone.now()) + timezone.timedelta(days=1)
+            notification.next_notification = next_run
+            notification.save()
+            if notification.periodic_task:
+                notification.periodic_task.crontab.day_of_month = '*'
+                notification.periodic_task.crontab.save()
+        elif notification.repeat_mode == 'random':
+            import random
+            next_run = timezone.localtime(timezone.now()) + timezone.timedelta(
+                hours=random.randint(1, 24),
+                minutes=random.randint(0, 59)
+            )
+            notification.next_notification = next_run
+            notification.save()
+            schedule_notification(notification)
+        
+    except NotificationSettings.DoesNotExist:
+        print(f"Notification with id {notification_id} not found")
+
 # @shared_task
 # def process_notifications():
-#     now = timezone.now() #현재 시각 입력
+#     now = timezone.now() #현재 시각 입력 + 저장된 date값과 시간값을 1분마다 현재 시각이랑 비교를 했을때 알람이 실행이 되지 않았고(false) 일치하는 값이 있을때만 실행-> 너무 서버 부담이 커지지 않나?
 #     notifications = NotificationSettings.objects.filter(# 알람시간의 값을 filter로 구분을 해서 가지고 오는데 related되어있는게 단순히 user를 가져오는게 아니라 로그인되어있는 user를 가지고 와야함.
 #         is_triggered=False,
 #         notification_date__lte=now.date(),
@@ -27,6 +78,7 @@ def test_task(a: int, b: int):
 #     for notification in notifications:
 #         send_fcm_notification.delay(notification.id)
 #         update_notification_status(notification)
+
 
 
 # def update_notification_status(notification):

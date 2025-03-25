@@ -16,8 +16,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import status
-
-
+from .utils import schedule_notification
+from django.utils import timezone
+from datetime import datetime
+import pytz
 
 class TTSVoiceViewSet(viewsets.ModelViewSet):
     queryset = TTSVoice.objects.all()
@@ -75,13 +77,36 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
             )
 
             # NotificationSettings 생성
+            # notification = NotificationSettings.objects.create(
+            #     sentence=sentence,
+            #     repeat_mode=notification_data['repeat_mode'],
+            #     notification_time=notification_data.get('notification_time', None),
+            #     notification_date=notification_data.get('notification_date', None)
+            # )
+
+            kst_tz = pytz.timezone('Asia/Seoul')
+            
+            # 2) 명시적으로 KST로 변환
+            kst_time = kst_tz.localize(datetime.combine(
+                notification_data.get('notification_date'),
+                notification_data.get('notification_time')
+            ))
+            print("명시적 KST 시간:", kst_time)  # 2025-03-25 13:54:00+09:00
+            
+            # 3) UTC 변환
+            utc_time = kst_time.astimezone(pytz.UTC)
+            print("UTC 시간:", utc_time)
+            
             notification = NotificationSettings.objects.create(
                 sentence=sentence,
                 repeat_mode=notification_data['repeat_mode'],
-                notification_time=notification_data.get('notification_time', None),
-                notification_date=notification_data.get('notification_date', None)
+                notification_time=notification_data.get('notification_time'),
+                notification_date=notification_data.get('notification_date'),
+                next_notification=utc_time
             )
-
+            #timezone.make_aware(datetime.combine(notification_data.get('notification_date'),notification_data.get('notification_time')))
+            schedule_notification(notification)#celery beat에 바로 스케줄링을 해준다.
+            
             # UserSettings 업데이트
             request.user.vibration_enabled = user_settings_data['vibration_enabled']
             request.user.save()
@@ -134,8 +159,29 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
                 # Update notification settings
             for attr, value in notification_data.items():
                 setattr(notification, attr, value)
+            
+            if 'notification_time' in notification_data or 'notification_date' in notification_data: # next_notification을 저장해준다. timezone.make_aware을 이용해서 Aware datetime 객체사용 이유는 django는 기본적으로 UTC 시간대를 사용
+                kst_tz = pytz.timezone('Asia/Seoul')
+                
+                # 2) 명시적으로 KST로 변환
+                kst_time = kst_tz.localize(datetime.combine(
+                    notification_data.get('notification_date'),
+                    notification_data.get('notification_time')
+                ))
+                print("명시적 KST 시간:", kst_time)  # 2025-03-25 13:54:00+09:00
+                
+                # 3) UTC 변환
+                utc_time = kst_time.astimezone(pytz.UTC)
+                print("UTC 시간:", utc_time)
+                
+                notification.next_notification=utc_time
+                # notification.next_notification = timezone.make_aware(datetime.combine(
+                #     notification_data.get('notification_date', notification.notification_date),
+                #     notification_data.get('notification_time', notification.notification_time)
+                # ))
             notification.save()
-
+            schedule_notification(notification) #업데이트시에도 재스케줄링
+            
                 # Update user settings
             user = request.user
             if 'vibration_enabled' in user_settings_data:
@@ -162,6 +208,9 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
         if notification.sentence.user != request.user:
             return Response({"error": "권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN)
 
+        if notification.periodic_task:#알림 설정 지우기 
+            notification.periodic_task.delete()
+        
         try:
             # 연관된 Sentence 객체 삭제
             sentence = notification.sentence

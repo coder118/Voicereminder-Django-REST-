@@ -128,8 +128,11 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Asia/Seoul'
+TIME_ZONE = 'Asia/Seoul'
+CELERY_TIMEZONE = 'Asia/Seoul' #단지 사용자에게 보이는 시간만 변경
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_ENABLE_UTC=True #모든 스케줄링은 UTC로 처리되며, 이 설정을 False로 해도 내부적으로 UTC를 사용
+USE_TZ = True  # True 필수
 # from celery.schedules import crontab
 
 # CELERY_BEAT_SCHEDULE = {

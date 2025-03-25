@@ -88,6 +88,14 @@ class Sentence(models.Model):
 class NotificationSettings(models.Model):
     """알림 설정"""
     sentence = models.OneToOneField(Sentence, on_delete=models.CASCADE)  # 문장과 연결을 해서 1:n의 관계를 만듬 문장 하나에 여러개의 알림이 가능
+    
+    periodic_task = models.OneToOneField( #beat의 PeriodicTask값을 저장한다. 
+        'django_celery_beat.PeriodicTask',
+        on_delete=models.SET_NULL,#관련 PeriodicTask가 삭제되면 이 필드는 NULL로 설정
+        null=True,
+        blank=True
+    )
+    
     repeat_mode = models.CharField(
         max_length=10,
         choices=[('once', '한번'), ('daily', '매일'), ('random', '랜덤')],
