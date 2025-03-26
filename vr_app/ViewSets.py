@@ -179,7 +179,7 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
                 #     notification_data.get('notification_date', notification.notification_date),
                 #     notification_data.get('notification_time', notification.notification_time)
                 # ))
-            notification.save()
+            # notification.save()
             schedule_notification(notification) #업데이트시에도 재스케줄링
             
                 # Update user settings

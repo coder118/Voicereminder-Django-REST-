@@ -31,37 +31,40 @@ def send_notification(notification_id):
     print("what the celery working?")
     try:
         print("check celery task")
-        notification = NotificationSettings.objects.get(id=notification_id)
+        notification = NotificationSettings.objects.get(id=notification_id) #notification의 아이디값을 가져와서 notificaion의 외래키를 이용해서 user이름, 문장값을 가져올 수 있다.
         user = notification.sentence.user
         
         
         # 실제 알림 전송 로직
         print(f"Sending notification to {user.username}: {notification.sentence.content}")
         
+        
+        send_fcm_notification(notification_id)
+        
         # 여기에 실제 알림 전송 코드 추가 (예: FCM)
         
-        # 반복 모드 처리
-        if notification.repeat_mode == 'once':
-            notification.is_triggered = True
-            notification.save()
-            if notification.periodic_task:
-                notification.periodic_task.delete()
-        elif notification.repeat_mode == 'daily':
-            next_run = timezone.localtime(timezone.now()) + timezone.timedelta(days=1)
-            notification.next_notification = next_run
-            notification.save()
-            if notification.periodic_task:
-                notification.periodic_task.crontab.day_of_month = '*'
-                notification.periodic_task.crontab.save()
-        elif notification.repeat_mode == 'random':
-            import random
-            next_run = timezone.localtime(timezone.now()) + timezone.timedelta(
-                hours=random.randint(1, 24),
-                minutes=random.randint(0, 59)
-            )
-            notification.next_notification = next_run
-            notification.save()
-            schedule_notification(notification)
+        # # 반복 모드 처리
+        # if notification.repeat_mode == 'once':
+        #     notification.is_triggered = True
+        #     notification.save()
+        #     if notification.periodic_task:
+        #         notification.periodic_task.delete()
+        # elif notification.repeat_mode == 'daily':
+        #     next_run = timezone.localtime(timezone.now()) + timezone.timedelta(days=1)
+        #     notification.next_notification = next_run
+        #     notification.save()
+        #     if notification.periodic_task:
+        #         notification.periodic_task.crontab.day_of_month = '*'
+        #         notification.periodic_task.crontab.save()
+        # elif notification.repeat_mode == 'random':
+        #     import random
+        #     next_run = timezone.localtime(timezone.now()) + timezone.timedelta(
+        #         hours=random.randint(1, 24),
+        #         minutes=random.randint(0, 59)
+        #     )
+        #     notification.next_notification = next_run
+        #     notification.save()
+        #     schedule_notification(notification)
         
     except NotificationSettings.DoesNotExist:
         print(f"Notification with id {notification_id} not found")

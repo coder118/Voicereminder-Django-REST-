@@ -1,6 +1,10 @@
 from django_celery_beat.models import PeriodicTask, CrontabSchedule, ClockedSchedule
 from django.utils import timezone
 import json
+import random
+import pytz
+from datetime import datetime, timedelta
+
 
 def schedule_notification(notification):
     # 기존 PeriodicTask 삭제 update할때 
@@ -42,6 +46,36 @@ def schedule_notification(notification):
             args=json.dumps([notification.id]),
             one_off=True,
         )
+    
+    elif notification.repeat_mode == 'random':
+        
+        # 1. 랜덤 시간 생성 (KST 기준)
+        kst_tz = pytz.timezone('Asia/Seoul')
+        random_hours = random.randint(1, 24)
+        random_minutes = random.randint(0, 59)
+
+        # 현재 KST 시간에 랜덤 델타 추가
+        next_run_kst = datetime.now(kst_tz) + timedelta(
+            hours=random_hours,
+            minutes=random_minutes
+        )
+        # 2. 명시적 KST 시간 출력 (디버깅용)
+        print("랜덤생성된 KST 시간:", next_run_kst)  # 예: 2025-03-27 15:30:00+09:00
+        # 3. UTC 변환
+        next_run_utc = next_run_kst.astimezone(pytz.UTC)
+        print("랜덤변환된 UTC 시간:", next_run_utc)  # 예: 2025-03-27 06:30:00+00:00
+        
+        clocked, _ = ClockedSchedule.objects.get_or_create(
+            clocked_time=next_run_utc
+        )
+        task = PeriodicTask.objects.create(
+            clocked=clocked,
+            name=f'Notification-{notification.id}',
+            task='vr_app.tasks.send_notification',
+            args=json.dumps([notification.id]),
+            one_off=True,
+        )
+        
     
     # # CrontabSchedule 생성
     # schedule, _ = CrontabSchedule.objects.get_or_create(
