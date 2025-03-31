@@ -4,7 +4,7 @@ import json
 import random
 import pytz
 from datetime import datetime, timedelta
-
+from google.cloud import texttospeech
 
 def schedule_notification(notification):
     # 기존 PeriodicTask 삭제 update할때 
@@ -98,3 +98,26 @@ def schedule_notification(notification):
     # NotificationSettings와 연결
     notification.periodic_task = task
     notification.save()
+
+
+#, language_code: str
+def generate_tts_audio(text: str, language_code: str,voice_name: str) -> bytes:
+    """Google TTS API를 사용해 오디오 생성"""
+    client = texttospeech.TextToSpeechClient()
+    
+    synthesis_input = texttospeech.SynthesisInput(text=text)
+    voice = texttospeech.VoiceSelectionParams(
+        language_code=language_code,
+        name=voice_name
+    )#language_code=language_code,
+    audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.MP3
+    )
+    
+    response = client.synthesize_speech(
+        input=synthesis_input,
+        voice=voice,
+        audio_config=audio_config
+    )
+    return response.audio_content
+

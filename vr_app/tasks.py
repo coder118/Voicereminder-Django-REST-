@@ -1,15 +1,19 @@
 from celery import shared_task
 from django.utils import timezone
-from .fcm_utils import send_fcm_notification
+from .fcm_utils import *
 from django.apps import apps  # models를 직접 import하는 대신 사용
 from firebase_admin import messaging
 from .models import NotificationSettings, FCMToken, Sentence
 import random
 
 from typing import List
-
+from django.http import StreamingHttpResponse
+import json
+import base64  # Base64 모듈 임포트
 from django.utils import timezone
-from .utils import schedule_notification
+from .utils import *
+
+import redis
 
 @shared_task
 def test_task(a: int, b: int):
@@ -41,30 +45,20 @@ def send_notification(notification_id):
         
         send_fcm_notification(notification_id)
         
-        # 여기에 실제 알림 전송 코드 추가 (예: FCM)
+        audio_content = generate_tts_audio(
+        text=notification.sentence.content,
+        language_code="ko-KR",
+        voice_name=notification.sentence.tts_voice.voice_id
+        )
         
-        # # 반복 모드 처리
-        # if notification.repeat_mode == 'once':
-        #     notification.is_triggered = True
-        #     notification.save()
-        #     if notification.periodic_task:
-        #         notification.periodic_task.delete()
-        # elif notification.repeat_mode == 'daily':
-        #     next_run = timezone.localtime(timezone.now()) + timezone.timedelta(days=1)
-        #     notification.next_notification = next_run
-        #     notification.save()
-        #     if notification.periodic_task:
-        #         notification.periodic_task.crontab.day_of_month = '*'
-        #         notification.periodic_task.crontab.save()
-        # elif notification.repeat_mode == 'random':
-        #     import random
-        #     next_run = timezone.localtime(timezone.now()) + timezone.timedelta(
-        #         hours=random.randint(1, 24),
-        #         minutes=random.randint(0, 59)
-        #     )
-        #     notification.next_notification = next_run
-        #     notification.save()
-        #     schedule_notification(notification)
+        r = redis.Redis()
+        r.publish(
+            channel=f"user_{user.id}_tts",
+            message=json.dumps({
+                'audio': base64.b64encode(audio_content).decode('utf-8'),
+                'sentence_id': notification.sentence_id
+            })
+        )
         
     except NotificationSettings.DoesNotExist:
         print(f"Notification with id {notification_id} not found")

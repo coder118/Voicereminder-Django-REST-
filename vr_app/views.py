@@ -15,6 +15,10 @@ from rest_framework_simplejwt.exceptions import TokenError
 import logging
 from django.http import HttpRequest
 # logger = logging.getLogger('django')
+from django.core.cache import cache
+from io import BytesIO
+from django.http import StreamingHttpResponse
+from google.cloud import texttospeech
 
 
 from vr_app.tasks import test_task
@@ -162,3 +166,59 @@ class UpdateFcmTokenView(APIView): # fcm 토큰을 유저에 fcm_token 필드에
         except CustomUser.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)    
     
+
+
+class RealTimeTTSView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, sentence_id):
+        sentence = get_object_or_404(Sentence, id=sentence_id, user=request.user)
+        
+        # 캐시 키 생성 (문장 내용 + 음성 ID)
+        cache_key = f"tts_{sentence.content_hash}_{sentence.tts_voice_id}"
+        audio_data = cache.get(cache_key)
+        
+        if not audio_data:
+            # Google TTS 실시간 생성
+            audio_data = generate_tts_audio(
+                text=sentence.content,
+                voice_id=sentence.tts_voice.voice_id
+            )
+            cache.set(cache_key, audio_data, timeout=3600)  # 1시간 캐시
+
+        # 스트리밍 응답
+        return StreamingHttpResponse(
+            BytesIO(audio_data),
+            content_type='audio/mpeg',
+            headers={'Cache-Control': 'max-age=3600'}  # 클라이언트 캐싱 유도
+        )
+
+    def get2(self, request, sentence_id):
+        sentence = get_object_or_404(Sentence, id=sentence_id)
+        
+        # Google TTS 클라이언트 생성
+        client = texttospeech.TextToSpeechClient()
+        synthesis_input = texttospeech.SynthesisInput(text=sentence.content)
+        voice = texttospeech.VoiceSelectionParams(
+            language_code=sentence.tts_voice.language,
+            name=sentence.tts_voice.voice_id
+        )
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.MP3
+        )
+        
+        # TTS 변환 실행
+        response = client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice,
+            audio_config=audio_config
+        )
+        
+        # 스트리밍 응답
+        return StreamingHttpResponse(
+            iter([response.audio_content]),
+            content_type='audio/mpeg',
+            headers={
+                'Content-Disposition': f'inline; filename="tts_{sentence_id}.mp3"'
+            }
+        )

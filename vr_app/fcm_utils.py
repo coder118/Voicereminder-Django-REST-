@@ -3,21 +3,7 @@ from celery import shared_task
 from django.utils import timezone
 from .models import NotificationSettings ,FCMToken, Sentence
 from .models import CustomUser 
-# def send_fcm_notification(token,title,message):
-#     message = messaging.Message(
-#         notification=messaging.Notification(
-#             title=title,
-#             body=message,
-#         ),
-#         token=token,
-#     )
-#     try:
-#         response = messaging.send(message)
-#         return response
-#     except Exception as e:
-#         print(f"FCM 전송 실패: {e}")
-#         return None
-    
+
 #@shared_task
 def send_fcm_notification(notification_id):
     print("send_fcm_noti working")
