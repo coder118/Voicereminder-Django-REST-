@@ -138,20 +138,3 @@ def send_notification(notification_id):
 #         # 다음 알림 체크를 예약
 #         check_alarms.apply_async(countdown=max(0, delay))
         
-
-# @shared_task
-# def check_alarms():
-#     current_time = timezone.now()
-#     alarms = NotificationSettings.objects.filter(alarm_time__lte=current_time, is_triggered=False)
-    
-#     for alarm in alarms:
-#         send_fcm_notification(alarm.sentence.user.fcm_token, "알람",alarm.sentence.content)
-#         alarm.is_triggered = True
-#         alarm.save()
-
-# @shared_task
-# def schedule_next_check():
-#     next_alarm = NotificationSettings.objects.filter(is_triggered=False).order_by('alarm_time').first()
-#     if next_alarm:
-#         delay = (next_alarm.alarm_time - timezone.now()).total_seconds()
-#         check_alarms.apply_async(countdown=max(0, delay))
