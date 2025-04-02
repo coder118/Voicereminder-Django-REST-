@@ -28,6 +28,6 @@ app.conf.timezone = 'Asia/Seoul'
 app.conf.beat_schedule = {
     'test_periodic_task': {
         'task': 'vr_app.tasks.test_periodic_task',
-        'schedule': crontab(minute='*/10'), #timedelta(seconds=10)  #minute=1 그냥 이렇게 적으면 매 1분이라는 시각에만 동작하는 것. 8시1분 9시1분 이런식
+        'schedule': crontab(minute='*/3'), #timedelta(seconds=10)  #minute=1 그냥 이렇게 적으면 매 1분이라는 시각에만 동작하는 것. 8시1분 9시1분 이런식
     },
 }

@@ -5,6 +5,10 @@ import random
 import pytz
 from datetime import datetime, timedelta
 from google.cloud import texttospeech
+from google.oauth2 import service_account
+import os
+from pathlib import Path
+
 
 def schedule_notification(notification):
     # 기존 PeriodicTask 삭제 update할때 
@@ -103,7 +107,10 @@ def schedule_notification(notification):
 #, language_code: str
 def generate_tts_audio(text: str, language_code: str,voice_name: str) -> bytes:
     """Google TTS API를 사용해 오디오 생성"""
-    client = texttospeech.TextToSpeechClient()
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    cred_path2 = os.path.join(BASE_DIR, "voicereminder_app_d9862bebb234.json")
+    google_cred = service_account.Credentials.from_service_account_file(cred_path2)
+    client = texttospeech.TextToSpeechClient(credentials=google_cred)
     
     synthesis_input = texttospeech.SynthesisInput(text=text)
     voice = texttospeech.VoiceSelectionParams(

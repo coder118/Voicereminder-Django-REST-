@@ -74,6 +74,7 @@ class LoginView(APIView):
                 #"tts_voice": user.tts_voice.name if user.tts_voice else 0,
                 #"fcm_token": user.fcm_token, 
                 "vibration_enabled": user.vibration_enabled,
+                'id': user.id,
             }, status=status.HTTP_200_OK)
         return Response({"error": "로그인 실패. 아이디 또는 비밀번호를 확인하세요."}, status=status.HTTP_401_UNAUTHORIZED)
     

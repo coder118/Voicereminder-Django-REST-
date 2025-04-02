@@ -16,7 +16,7 @@ import os, json
 from django.core.exceptions import ImproperlyConfigured
 import firebase_admin
 from firebase_admin import credentials
-
+from google.oauth2 import service_account
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +29,9 @@ cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")
 cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
 
+cred_path2 = os.path.join(BASE_DIR, "voicereminder_app_d9862bebb234.json")
+google_cred = service_account.Credentials.from_service_account_file(cred_path2)
+print("google",google_cred)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 secret_file = os.path.join(BASE_DIR, 'secrets.json')  # secrets.json 파일 위치를 명시
