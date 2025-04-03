@@ -2,3 +2,4 @@ secrets.json
 serviceAccountKey.json
 voicereminder_app_d9862bebb234.json
 voicereminder_venv/
+.env

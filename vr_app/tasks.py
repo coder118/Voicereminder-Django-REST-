@@ -148,7 +148,7 @@ def send_notification(notification_id):
         print("check celery task")
         notification = NotificationSettings.objects.get(id=notification_id) #notification의 아이디값을 가져와서 notificaion의 외래키를 이용해서 user이름, 문장값을 가져올 수 있다.
         user = notification.sentence.user
-        
+        tts_voice = notification.sentence.tts_voice
         
         # 실제 알림 전송 로직
         print(f"Sending notification to {user.username}: {notification.sentence.content}")
@@ -156,10 +156,21 @@ def send_notification(notification_id):
         
         send_fcm_notification(notification_id)
         
+        
+        voice_mapping = {
+            1: "ko-KR-Standard-A",
+            2: "ko-KR-Standard-B",
+            3: "ko-KR-Standard-C",
+            4: "ko-KR-Standard-D"
+            }
+        
+        VoiceName = voice_mapping.get(tts_voice.id, "ko-KR-Standard-A")
+        print(VoiceName)
+        
         audio_content = generate_tts_audio(
         text=notification.sentence.content,
         language_code="ko-KR",
-        voice_name="ko-KR-Standard-A"
+        voice_name=VoiceName
         )
         
         r = redis.Redis()

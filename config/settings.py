@@ -18,6 +18,9 @@ import firebase_admin
 from firebase_admin import credentials
 from google.oauth2 import service_account
 
+import environ
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 print("afddddddddddddd",BASE_DIR)
@@ -25,13 +28,14 @@ print("afddddddddddddd",BASE_DIR)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")
-cred = credentials.Certificate(cred_path)
-firebase_admin.initialize_app(cred)
 
-cred_path2 = os.path.join(BASE_DIR, "voicereminder_app_d9862bebb234.json")
-google_cred = service_account.Credentials.from_service_account_file(cred_path2)
-print("google",google_cred)
+if not firebase_admin._apps:  # 이미 초기화된 경우 다시 초기화하지 않음
+    cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+
+
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 secret_file = os.path.join(BASE_DIR, 'secrets.json')  # secrets.json 파일 위치를 명시
@@ -70,6 +74,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist', 
     'vr_app',
+    'psycopg2',
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -136,43 +141,6 @@ CELERY_TIMEZONE = 'Asia/Seoul' #단지 사용자에게 보이는 시간만 변�
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_ENABLE_UTC=True #모든 스케줄링은 UTC로 처리되며, 이 설정을 False로 해도 내부적으로 UTC를 사용
 USE_TZ = True  # True 필수
-# from celery.schedules import crontab
-
-# CELERY_BEAT_SCHEDULE = {
-#     'process-notifications-every-minute': {
-#         'task': 'vr_app.tasks.process_notifications',
-#         'schedule': crontab(minute='*/1'),
-#     },
-# }
-
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'file': {  # 파일에 로그 저장
-#             'level': 'DEBUG',
-#             'class': 'logging.FileHandler',
-#             'filename': os.path.join(BASE_DIR, 'django_requests.log'),
-#         },
-#         'console': {  # 콘솔(터미널)에 로그 출력
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['file', 'console'],
-#             'level': 'DEBUG',
-#             'propagate': True,
-#         },
-#         'django.request': {  # HTTP 요청 관련 로그
-#             'handlers': ['file', 'console'],
-#             'level': 'DEBUG',
-#             'propagate': False,
-#         },
-#     },
-# }
-
 
 
 MIDDLEWARE = [
@@ -210,10 +178,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+env= environ.Env()
+environ.Env.read_env(BASE_DIR / '.env')
+
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
+    # }
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
 
