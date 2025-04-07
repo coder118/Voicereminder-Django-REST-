@@ -146,41 +146,41 @@ def send_notification(notification_id):
     print("what the celery working?")
     try:
         print("check celery task")
-        notification = NotificationSettings.objects.get(id=notification_id) #notification의 아이디값을 가져와서 notificaion의 외래키를 이용해서 user이름, 문장값을 가져올 수 있다.
-        user = notification.sentence.user
-        tts_voice = notification.sentence.tts_voice
+        # notification = NotificationSettings.objects.get(id=notification_id) #notification의 아이디값을 가져와서 notificaion의 외래키를 이용해서 user이름, 문장값을 가져올 수 있다.
+        # user = notification.sentence.user
+        # tts_voice = notification.sentence.tts_voice
         
         # 실제 알림 전송 로직
-        print(f"Sending notification to {user.username}: {notification.sentence.content}")
+        # print(f"Sending notification to {user.username}: {notification.sentence.content}")
         
         
         send_fcm_notification(notification_id)
         
         
-        voice_mapping = {
-            1: "ko-KR-Standard-A",
-            2: "ko-KR-Standard-B",
-            3: "ko-KR-Standard-C",
-            4: "ko-KR-Standard-D"
-            }
+        # voice_mapping = {
+        #     1: "ko-KR-Standard-A",
+        #     2: "ko-KR-Standard-B",
+        #     3: "ko-KR-Standard-C",
+        #     4: "ko-KR-Standard-D"
+        #     }
         
-        VoiceName = voice_mapping.get(tts_voice.id, "ko-KR-Standard-A")
-        print(VoiceName)
+        # VoiceName = voice_mapping.get(tts_voice.id, "ko-KR-Standard-A")
+        # print(VoiceName)
         
-        audio_content = generate_tts_audio(
-        text=notification.sentence.content,
-        language_code="ko-KR",
-        voice_name=VoiceName
-        )
+        # audio_content = generate_tts_audio(
+        # text=notification.sentence.content,
+        # language_code="ko-KR",
+        # voice_name=VoiceName
+        # )
         
-        r = redis.Redis()
-        r.publish(
-            channel=f"user_{user.id}_tts",
-            message=json.dumps({
-                'audio': base64.b64encode(audio_content).decode('utf-8'),
-                'sentence_id': notification.sentence_id
-            })
-        )
+        # r = redis.Redis()
+        # r.publish(
+        #     channel=f"user_{user.id}_tts",
+        #     message=json.dumps({
+        #         'audio': base64.b64encode(audio_content).decode('utf-8'),
+        #         'sentence_id': notification.sentence_id
+        #     })
+        # )
         
     except NotificationSettings.DoesNotExist:
         print(f"Notification with id {notification_id} not found")

@@ -19,10 +19,12 @@ from django.core.cache import cache
 from io import BytesIO
 from django.http import StreamingHttpResponse
 from google.cloud import texttospeech
-
-
+from .models import NotificationSettings,Sentence
+from .utils import *
 from vr_app.tasks import test_task
 from celery.result import AsyncResult
+from django.shortcuts import get_object_or_404  # 필수 임포트 추가
+from django.http import Http404
 
 class Test(APIView): #celery 테스트 
     def get(self, request: HttpRequest):
@@ -60,12 +62,15 @@ class LoginView(APIView):
         user = authenticate(username=username, password=password)
         print(user)
         if user:
-            # FCM 토큰 업데이트
-            # if fcm_token:
-            #     user.fcm_token = fcm_token
-            #     user.save()
-            # FCM 토큰 저장 또는 업데이트
             
+            
+            if user.is_logged_in:
+                return Response({"error": "이미 다른 기기에서 로그인되어 있습니다."}, status=403)
+
+            # 로그인 성공 처리-> 여러기기에서 동시에 로그인하는 것을 방지하기 위해서 
+            user.is_logged_in = True
+            user.save()
+
             refresh = RefreshToken.for_user(user)
             return Response({
                 "refresh": str(refresh),
@@ -75,6 +80,7 @@ class LoginView(APIView):
                 #"fcm_token": user.fcm_token, 
                 "vibration_enabled": user.vibration_enabled,
                 'id': user.id,
+                'isLoggedIn':user.is_logged_in,
             }, status=status.HTTP_200_OK)
         return Response({"error": "로그인 실패. 아이디 또는 비밀번호를 확인하세요."}, status=status.HTTP_401_UNAUTHORIZED)
     
@@ -92,6 +98,7 @@ class LogoutView(APIView):
         print("Body:", request.data)
         try:
             
+            
             FCMToken.objects.filter(user=request.user).delete()#로그아웃시 로그인시 만들었던 fmctoken삭제 
             
             print("logout?")
@@ -107,6 +114,10 @@ class LogoutView(APIView):
             # user = request.user
             # user.fcm_token = None  # FCM 토큰을 제거하지 않고 연결만 끊음
             # user.save()
+            user=request.user 
+            print(user)
+            user.is_logged_in = False
+            user.save()
             
             return Response(status=status.HTTP_204_NO_CONTENT)
         #HttpResponse(status=status.HTTP_205_RESET_CONTENT, content_type=None)  Response({"message": "로그아웃 성공"}, status=status.HTTP_205_RESET_CONTENT)
@@ -146,6 +157,8 @@ class DeleteAccountView(APIView):
         # FCM 토큰 제거
         # user.fcm_token = None
         # user.save()
+        user.is_logged_in = False
+        user.save()
         FCMToken.objects.filter(user=request.user).delete()
         user.delete()
         return Response({"message": "계정이 성공적으로 삭제되었습니다."}, status=status.HTTP_200_OK)
@@ -169,6 +182,88 @@ class UpdateFcmTokenView(APIView): # fcm 토큰을 유저에 fcm_token 필드에
     
 
 
+class changeText_to_TTS(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self,request):
+          # URL에서 notification_id 추출
+        try:
+           
+            sentence_id = request.query_params.get('sentence_id')
+            user_id = request.query_params.get('user_id')
+            
+            sentence = get_object_or_404(
+                Sentence.objects.select_related('tts_voice'),
+                id=sentence_id,
+                user_id=user_id)
+            print('sentence change tts',sentence)
+            print('sentence change tts222',sentence.content)
+            #음성 매핑
+            voice_mapping = {
+                1: "ko-KR-Standard-A",
+                2: "ko-KR-Standard-B", 
+                3: "ko-KR-Standard-C",
+                4: "ko-KR-Standard-D"
+            }
+            voice_name = voice_mapping.get(
+                sentence.tts_voice.id, 
+                "ko-KR-Standard-A"  # 기본값
+            )
+
+            # 4. TTS 생성
+            audio_content = generate_tts_audio(
+                text=sentence.content,
+                language_code="ko-KR",
+                voice_name=voice_name
+            )
+
+            return StreamingHttpResponse(
+                iter([audio_content]),
+                content_type='audio/mpeg',
+                headers={
+                    'Content-Disposition': f'inline; filename="tts_{sentence_id}.mp3"',
+                    'Content-Length': str(len(audio_content))
+                }
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        # notification_id = request.data.get('notification_id')
+        # print("nofificationid",notification_id)
+        # notification = NotificationSettings.objects.get(id=notification_id)
+        # sentence = notification.sentence
+        # tts_voice = notification.sentence.tts_voice
+
+        # voice_mapping = {
+        #     1: "ko-KR-Standard-A",
+        #     2: "ko-KR-Standard-B",
+        #     3: "ko-KR-Standard-C",
+        #     4: "ko-KR-Standard-D"
+        #     }
+        
+        # VoiceName = voice_mapping.get(tts_voice.id, "ko-KR-Standard-A")
+        # print(VoiceName)
+        
+        # audio_content = generate_tts_audio(
+        # text=notification.sentence.content,
+        # language_code="ko-KR",
+        # voice_name=VoiceName
+        # )
+        
+        # return StreamingHttpResponse(
+        #     iter([audio_content]),
+        #     content_type='audio/mpeg',
+        #     headers={
+        #         'Content-Disposition': f'inline; filename="tts_{notification_id}.mp3"',
+        #         'Content-Length': str(len(audio_content))  # 필수 헤더
+        #     }
+        # )
+        
+        
+        
+        
 class RealTimeTTSView(APIView):
     permission_classes = [IsAuthenticated]
 

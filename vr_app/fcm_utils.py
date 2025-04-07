@@ -18,6 +18,16 @@ def send_fcm_notification(notification_id):
     print(user.fcm_tokens.values('token'))
     print(user.fcm_tokens.first().token)
     fcm_token = user.fcm_tokens.first().token
+    print("sentence",str(notification.sentence.id))
+    
+    # notification2 = NotificationSettings.objects.select_related(
+    # 'sentence__user'  # SQL JOIN으로 한 번에 조회
+    # ).get(id=notification_id)
+    # if not notification2.sentence:
+    #     raise ValueError("연결된 문장이 삭제됨")
+
+    # user_id = notification2.sentence.user
+    # print("userid",user_id)
     
     if not fcm_token:
         print(f"No FCM token found for user: {user.username}")
@@ -30,10 +40,13 @@ def send_fcm_notification(notification_id):
         ),
         token=fcm_token,
         data={
+            
             "title": "알림",
             "body": notification.sentence.content,
             "click_action": "FLUTTER_NOTIFICATION_CLICK",  # Flutter에서 필수
             "notification_id": str(notification.id),  # 추가 데이터
+            "user_id": str(user),
+            "sentence_id": str(notification.sentence.id),
         },
         
         android=messaging.AndroidConfig(

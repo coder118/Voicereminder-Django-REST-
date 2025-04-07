@@ -4,7 +4,7 @@ from . import ViewSets
 
 from rest_framework import routers
 from .ViewSets import  TTSVoiceViewSet, SentenceViewSet, NotificationSettingsViewSet, AIRecommendedSentenceViewSet,SentenceNotificationViewSet
-from .views import RegisterView, LoginView, LogoutView,DeleteAccountView,RefreshTokenView,UpdateFcmTokenView
+from .views import RegisterView, LoginView, LogoutView,DeleteAccountView,RefreshTokenView,UpdateFcmTokenView,changeText_to_TTS
 from .post_views import CreatePostView
 from .getSentence_views import GetSentenceView
 from .update_views import UpdateSentenceView
@@ -36,6 +36,7 @@ urlpatterns = [
     # path('notifications_check/', GetSentenceView.as_view(), name='notifications_check'), 문장 get
     # path('sentence/<int:id>/', UpdateSentenceView.as_view(), name='update_sentence'), 문장 update
     
+    path('tts/sentence/', changeText_to_TTS.as_view(), name='text-to-tts'),
     
     path('test', Test.as_view()),
 ]

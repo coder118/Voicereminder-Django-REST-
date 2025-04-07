@@ -29,7 +29,7 @@ class FCMToken(models.Model):
 # CustomUser 모델
 class CustomUser(AbstractUser):
     """사용자 정보 확장"""
-    
+    is_logged_in = models.BooleanField(default=False)
     vibration_enabled = models.BooleanField(default=True)  # 진동 알림 설정
     #fcm_token = models.CharField(max_length=255, blank=True, null=True)
     
