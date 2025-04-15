@@ -189,15 +189,20 @@ class changeText_to_TTS(APIView):
           # URL에서 notification_id 추출
         try:
            
-            sentence_id = request.query_params.get('sentence_id')
-            user_id = request.query_params.get('user_id')
+            notification_id = request.query_params.get('notification_Id')
             
-            sentence = get_object_or_404(
-                Sentence.objects.select_related('tts_voice'),
-                id=sentence_id,
-                user_id=user_id)
-            print('sentence change tts',sentence)
-            print('sentence change tts222',sentence.content)
+            notification = get_object_or_404(
+                NotificationSettings.objects.select_related('sentence__tts_voice'),
+                id=notification_id,
+                sentence__user=request.user  # ✅ 자동으로 사용자 검증
+            )
+            
+            print('sentence change tts',notification)
+            print('sentence change tts222',notification.sentence.content)
+            
+            # 2. 문장과 TTS 음성 정보 추출
+            sentence = notification.sentence
+            print(f'TTS 생성 - 알람 ID: {notification_id}, 문장: {sentence.content}')
             #음성 매핑
             voice_mapping = {
                 1: "ko-KR-Standard-A",
@@ -221,7 +226,7 @@ class changeText_to_TTS(APIView):
                 iter([audio_content]),
                 content_type='audio/mpeg',
                 headers={
-                    'Content-Disposition': f'inline; filename="tts_{sentence_id}.mp3"',
+                    'Content-Disposition': f'inline; filename="tts_{notification_id}.mp3"',
                     'Content-Length': str(len(audio_content))
                 }
             )
@@ -230,36 +235,7 @@ class changeText_to_TTS(APIView):
                 {"error": str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        # notification_id = request.data.get('notification_id')
-        # print("nofificationid",notification_id)
-        # notification = NotificationSettings.objects.get(id=notification_id)
-        # sentence = notification.sentence
-        # tts_voice = notification.sentence.tts_voice
-
-        # voice_mapping = {
-        #     1: "ko-KR-Standard-A",
-        #     2: "ko-KR-Standard-B",
-        #     3: "ko-KR-Standard-C",
-        #     4: "ko-KR-Standard-D"
-        #     }
-        
-        # VoiceName = voice_mapping.get(tts_voice.id, "ko-KR-Standard-A")
-        # print(VoiceName)
-        
-        # audio_content = generate_tts_audio(
-        # text=notification.sentence.content,
-        # language_code="ko-KR",
-        # voice_name=VoiceName
-        # )
-        
-        # return StreamingHttpResponse(
-        #     iter([audio_content]),
-        #     content_type='audio/mpeg',
-        #     headers={
-        #         'Content-Disposition': f'inline; filename="tts_{notification_id}.mp3"',
-        #         'Content-Length': str(len(audio_content))  # 필수 헤더
-        #     }
-        # )
+ 
         
         
         

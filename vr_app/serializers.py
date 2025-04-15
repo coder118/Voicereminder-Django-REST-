@@ -41,6 +41,11 @@ class AIRecommendedSentenceSerializer(serializers.ModelSerializer):
         fields = ['content', 'category', 'created_at', 'is_active']
 
 
+class NotificationCheckSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationSettings
+        fields = ['is_triggered']
+
 # NotificationResponseSerializer: NotificationSettings 객체를 기준으로, 
 # 연결된 Sentence와 CustomUser 정보를 함께 보내줍니다.
 class NotificationResponseSerializer(serializers.ModelSerializer):
@@ -58,7 +63,7 @@ class NotificationResponseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = NotificationSettings
-        fields = ['id', 'sentence', 'notificationSettings', 'userSettings']
+        fields = ['id', 'sentence', 'notificationSettings', 'userSettings','is_triggered']
         
 class SentenceContentSerializer(serializers.Serializer):
     content = serializers.CharField()
@@ -73,7 +78,8 @@ class NotificationSettingsSerializer(serializers.Serializer):
     repeat_mode = serializers.CharField()
     notification_time = serializers.TimeField(allow_null=True, required=False)
     notification_date = serializers.DateField(allow_null=True, required=False)
-
+    is_triggered = serializers.BooleanField(required=False, default=False)
+    
 class UserSettingsSerializer(serializers.Serializer):
     vibration_enabled = serializers.BooleanField()
 

@@ -20,6 +20,7 @@ def send_fcm_notification(notification_id):
     fcm_token = user.fcm_tokens.first().token
     print("sentence",str(notification.sentence.id))
     
+    print("userid",user.id)
     # notification2 = NotificationSettings.objects.select_related(
     # 'sentence__user'  # SQL JOIN으로 한 번에 조회
     # ).get(id=notification_id)
@@ -45,7 +46,7 @@ def send_fcm_notification(notification_id):
             "body": notification.sentence.content,
             "click_action": "FLUTTER_NOTIFICATION_CLICK",  # Flutter에서 필수
             "notification_id": str(notification.id),  # 추가 데이터
-            "user_id": str(user),
+            "user_id": str(user.id),
             "sentence_id": str(notification.sentence.id),
         },
         

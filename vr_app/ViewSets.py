@@ -10,7 +10,7 @@ class TestViewSet(viewsets.ModelViewSet):
 
 
 from .models import TTSVoice, Sentence, NotificationSettings, AIRecommendedSentence
-from .serializers import TTSVoiceSerializer, SentenceSerializer, NotificationSettingsSerializer, AIRecommendedSentenceSerializer,NotificationResponseSerializer,SentenceCreateRequestSerializer,SentenceUpdateRequestSerializer
+from .serializers import TTSVoiceSerializer, SentenceSerializer, NotificationSettingsSerializer, AIRecommendedSentenceSerializer,NotificationResponseSerializer,SentenceCreateRequestSerializer,SentenceUpdateRequestSerializer,NotificationCheckSerializer
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -43,6 +43,17 @@ class AIRecommendedSentenceViewSet(viewsets.ModelViewSet):
     queryset = AIRecommendedSentence.objects.filter(is_active=True)  # 활성화된 문장만 반환
     serializer_class = AIRecommendedSentenceSerializer
 
+class NotificationCheckViewSet(viewsets.ModelViewSet): #알람이 실행되면 is triggered를 true로 바꿔주고 update할시에는 다시 false로 바꿔준다. 
+    queryset = NotificationSettings.objects.all()
+    serializer_class = NotificationCheckSerializer
+
+    @action(detail=True, methods=['patch'], url_path='update-trigger')
+    def update_trigger(self, request, pk=None):
+        notification = self.get_object()
+        serializer = self.get_serializer(notification, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post, delete,patch가능하다. 
     queryset = NotificationSettings.objects.all()
@@ -76,24 +87,17 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
                 tts_voice=sentence_data['tts_voice'] 
             )
 
-            # NotificationSettings 생성
-            # notification = NotificationSettings.objects.create(
-            #     sentence=sentence,
-            #     repeat_mode=notification_data['repeat_mode'],
-            #     notification_time=notification_data.get('notification_time', None),
-            #     notification_date=notification_data.get('notification_date', None)
-            # )
 
             kst_tz = pytz.timezone('Asia/Seoul')
             
-            # 2) 명시적으로 KST로 변환
+            # 명시적으로 KST로 변환
             kst_time = kst_tz.localize(datetime.combine(
                 notification_data.get('notification_date'),
                 notification_data.get('notification_time')
             ))
             print("명시적 KST 시간:", kst_time)  # 2025-03-25 13:54:00+09:00
             
-            # 3) UTC 변환
+            #  UTC 변환
             utc_time = kst_time.astimezone(pytz.UTC)
             print("UTC 시간:", utc_time)
             
@@ -104,7 +108,7 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
                 notification_date=notification_data.get('notification_date'),
                 next_notification=utc_time
             )
-            #timezone.make_aware(datetime.combine(notification_data.get('notification_date'),notification_data.get('notification_time')))
+            
             schedule_notification(notification)#celery beat에 바로 스케줄링을 해준다.
             
             # UserSettings 업데이트
@@ -139,9 +143,7 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
             notification_data = serializer.validated_data.get('notificationSettings', {})
             user_settings_data = serializer.validated_data.get('userSettings', {})
             
-            # print('sentence_data',sentence_data)
-            # print('notification_data',notification_data)
-            # print('user_settings_data',user_settings_data)
+            
             # Update sentence
             sentence = notification.sentence
             print('notification.sentence@@@@@@@@@',sentence)
@@ -163,23 +165,19 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
             if 'notification_time' in notification_data or 'notification_date' in notification_data: # next_notification을 저장해준다. timezone.make_aware을 이용해서 Aware datetime 객체사용 이유는 django는 기본적으로 UTC 시간대를 사용
                 kst_tz = pytz.timezone('Asia/Seoul')
                 
-                # 2) 명시적으로 KST로 변환
+                #  명시적으로 KST로 변환
                 kst_time = kst_tz.localize(datetime.combine(
                     notification_data.get('notification_date'),
                     notification_data.get('notification_time')
                 ))
                 print("명시적 KST 시간:", kst_time)  # 2025-03-25 13:54:00+09:00
                 
-                # 3) UTC 변환
+                #  UTC 변환
                 utc_time = kst_time.astimezone(pytz.UTC)
                 print("UTC 시간:", utc_time)
                 
                 notification.next_notification=utc_time
-                # notification.next_notification = timezone.make_aware(datetime.combine(
-                #     notification_data.get('notification_date', notification.notification_date),
-                #     notification_data.get('notification_time', notification.notification_time)
-                # ))
-            # notification.save()
+                
             schedule_notification(notification) #업데이트시에도 재스케줄링
             
                 # Update user settings
@@ -188,12 +186,7 @@ class SentenceNotificationViewSet(viewsets.ModelViewSet): # 여기서 get, post,
                 user.vibration_enabled = user_settings_data['vibration_enabled']
                 user.save()
 
-                # Update TTS voice
-                # tts_voice_id = user_settings_data.get('tts_voice')
-                # if tts_voice_id:
-                #     sentence.tts_voice = TTSVoice.objects.get(id=tts_voice_id)
-                #     sentence.save()
-
+            print("check trigger update",notification.is_triggered)
             return Response(NotificationResponseSerializer(notification).data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
